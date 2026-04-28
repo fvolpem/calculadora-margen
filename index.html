@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<meta name="apple-mobile-web-app-title" content="Margen Tubos"/>
+<title>Calculadora de Margen</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5f5f7;color:#1d1d1f;min-height:100vh}
+.header{background:#fff;border-bottom:1px solid #e5e5ea;padding:16px 20px;position:sticky;top:0;z-index:100}
+.header h1{font-size:17px;font-weight:600}
+.header p{font-size:12px;color:#8e8e93;margin-top:2px}
+.container{padding:16px;max-width:600px;margin:0 auto}
+.search-wrap{position:relative;margin-bottom:14px}
+.search-wrap input{width:100%;padding:12px 16px;font-size:16px;border:1px solid #e5e5ea;border-radius:12px;background:#fff;color:#1d1d1f;outline:none;-webkit-appearance:none}
+.search-wrap input:focus{border-color:#007aff}
+.dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;border:1px solid #e5e5ea;border-radius:12px;max-height:250px;overflow-y:auto;z-index:200;display:none;box-shadow:0 4px 20px rgba(0,0,0,0.1)}
+.dropdown.open{display:block}
+.di{padding:12px 16px;cursor:pointer;border-bottom:1px solid #f2f2f7}
+.di:last-child{border-bottom:none}
+.di:active{background:#f2f2f7}
+.di .name{font-size:14px;color:#1d1d1f}
+.di .meta{font-size:11px;color:#8e8e93;margin-top:2px;font-family:monospace}
+.card{background:#fff;border-radius:16px;padding:16px;margin-bottom:12px;border:1px solid #e5e5ea}
+.prod-title{font-size:15px;font-weight:600}
+.prod-sub{font-size:12px;color:#8e8e93;margin-top:4px}
+.badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:99px;background:#e8f4fd;color:#007aff;margin-left:6px;font-weight:500}
+.slabel{font-size:11px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.field label{font-size:12px;color:#8e8e93;display:block;margin-bottom:5px}
+.field input{width:100%;padding:10px 12px;font-size:16px;border:1px solid #e5e5ea;border-radius:10px;background:#fff;color:#1d1d1f;outline:none;-webkit-appearance:none}
+.field input:focus{border-color:#007aff}
+.pv-wrap{margin-bottom:4px}
+.pv-wrap label{font-size:14px;font-weight:500;display:block;margin-bottom:6px}
+.pv-wrap input{width:100%;padding:14px 16px;font-size:20px;border:2px solid #e5e5ea;border-radius:12px;background:#fff;color:#1d1d1f;outline:none;-webkit-appearance:none}
+.pv-wrap input:focus{border-color:#007aff}
+.metrics{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.metric{background:#f2f2f7;border-radius:12px;padding:12px 8px;text-align:center}
+.ml{font-size:11px;color:#8e8e93;margin-bottom:4px}
+.mv{font-size:15px;font-weight:600;color:#1d1d1f}
+.pos .mv{color:#34c759}
+.neg .mv{color:#ff3b30}
+.placeholder{text-align:center;padding:40px 20px;color:#c7c7cc;font-size:14px}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Calculadora de margen</h1>
+  <p>257 productos · v2.0</p>
+</div>
+<div class="container">
+  <div class="search-wrap">
+    <input type="text" id="search" placeholder="Buscar por codigo o nombre..." autocomplete="off"/>
+    <div class="dropdown" id="dd"></div>
+  </div>
+  <div id="result"><div class="placeholder">Busca un producto para calcular el margen</div></div>
+</div>
+<script>
+var DEF = {
+  "PVC":{mp:8300,cf:1300},
+  "PEAD":{mp:12800,cf:1500},
+  "PEAD RECUP":{mp:6250,cf:1500},
+  "POLIPROPILENO":{mp:13300,cf:1500}
+};
+var products = [
+  // PEAD RECUP
+  {tipo:"PEAD RECUP",cod:"CORRUG050",desc:"CAÑO CORRUGADO DE 1/2",peso:0.022,anillo:0},
+  {tipo:"PEAD RECUP",cod:"CORRUG063",desc:"CAÑO CORRUGADO DE 5/8",peso:0.028,anillo:0},
+  {tipo:"PEAD RECUP",cod:"CORRUG075",desc:"CAÑO CORRUGADO DE 3/4",peso:0.036,anillo:0},
+  {tipo:"PEAD RECUP",cod:"CORRUG100",desc:"CAÑO CORRUGADO DE 1",peso:0.044,anillo:0},
+  {tipo:"PEAD RECUP",cod:"ELECTR050",desc:"CAÑO ELECTRODUCTO DE 1/2",peso:0.048,anillo:0},
+  {tipo:"PEAD RECUP",cod:"ELECTR063",desc:"CAÑO ELECTRODUCTO DE 5/8",peso:0.072,anillo:0},
+  {tipo:"PEAD RECUP",cod:"ELECTR075",desc:"CAÑO ELECTRODUCTO DE 3/4",peso:0.092,anillo:0},
+  {tipo:"PEAD RECUP",cod:"ELECTR088",desc:"CAÑO ELECTRODUCTO DE 7/8",peso:0.11,anillo:0},
+  {tipo:"PEAD RECUP",cod:"ELECTR100",desc:"CAÑO ELECTRODUCTO DE 1",peso:0.12,anillo:0},
+  {tipo:"PEAD RECUP",cod:"ELECTR125",desc:"CAÑO ELECTRODUCTO DE 1.1/4",peso:0.198,anillo:0},
+  {tipo:"PEAD RECUP",cod:"ELECTR150",desc:"CAÑO ELECTRODUCTO DE 1.1/2",peso:0.24,anillo:0},
+  {tipo:"PEAD RECUP",cod:"ELECTR200",desc:"CAÑO ELECTRODUCTO DE 2",peso:0.4,anillo:0},
+  {tipo:"PEAD RECUP",cod:"TRITUBOR01",desc:"TRITIBO NEGRO PEAD 40MM X 3MM",peso:1.2,anillo:0},
+  {tipo:"PEAD RECUP",cod:"PESADO050",desc:"CAÑO PESADO DE 1/2",peso:0.16,anillo:0},
+  {tipo:"PEAD RECUP",cod:"PESADO075",desc:"CAÑO PESADO DE 3/4",peso:0.22,anillo:0},
+  {tipo:"PEAD RECUP",cod:"PESADO100",desc:"CAÑO PESADO DE 1",peso:0.305,anillo:0},
+  {tipo:"PEAD RECUP",cod:"PESADO125",desc:"CAÑO PESADO DE 1.1/4",peso:0.422,anillo:0},
+  {tipo:"PEAD RECUP",cod:"PESADO150",desc:"CAÑO PESADO DE 1.1/2",peso:0.625,anillo:0},
+  {tipo:"PEAD RECUP",cod:"PESADO200",desc:"CAÑO PESADO DE 2",peso:0.979,anillo:0},
+  {tipo:"PEAD RECUP",cod:"PESADO250",desc:"CAÑO PESADO DE 2.1/2",peso:1.32,anillo:0},
+  {tipo:"PEAD RECUP",cod:"PESADO300",desc:"CAÑO PESADO DE 3",peso:1.97,anillo:0},
+  {tipo:"PEAD RECUP",cod:"PESADO400",desc:"CAÑO PESADO DE 4",peso:2.85,anillo:0},
+  {tipo:"PEAD RECUP",cod:"STANDA050",desc:"CAÑO STANDARD DE 1/2",peso:0.135,anillo:0},
+  {tipo:"PEAD RECUP",cod:"STANDA075",desc:"CAÑO STANDARD DE 3/4",peso:0.18,anillo:0},
+  {tipo:"PEAD RECUP",cod:"STANDA100",desc:"CAÑO STANDARD DE 1",peso:0.23,anillo:0},
+  {tipo:"PEAD RECUP",cod:"STANDA125",desc:"CAÑO STANDARD DE 1.1/4",peso:0.36,anillo:0},
+  {tipo:"PEAD RECUP",cod:"STANDA150",desc:"CAÑO STANDARD DE 1.1/2",peso:0.44,anillo:0},
+  {tipo:"PEAD RECUP",cod:"STANDA200",desc:"CAÑO STANDARD DE 2",peso:0.64,anillo:0},
+  {tipo:"PEAD RECUP",cod:"STANDA250",desc:"CAÑO STANDARD DE 2.1/2",peso:0.978,anillo:0},
+  {tipo:"PEAD RECUP",cod:"STANDA300",desc:"CAÑO STANDARD DE 3",peso:1.376,anillo:0},
+  {tipo:"PEAD RECUP",cod:"STANDA400",desc:"CAÑO STANDARD DE 4",peso:1.91,anillo:0},
+  {tipo:"PEAD RECUP",cod:"PESNOR100",desc:"CAÑO PESADO DE 32MM",peso:0.2,anillo:0},
+  {tipo:"PEAD RECUP",cod:"PESNOR125",desc:"CAÑO PESADO DE 40MM",peso:0.3,anillo:0},
+  {tipo:"PEAD RECUP",cod:"PESNOR150",desc:"CAÑO PESADO DE 50MM",peso:0.42,anillo:0},
+  {tipo:"PEAD RECUP",cod:"PESNOR200",desc:"CAÑO PESADO DE 63MM",peso:0.67,anillo:0},
+  {tipo:"PEAD RECUP",cod:"PESNOR250",desc:"CAÑO PESADO DE 75MM",peso:1.0,anillo:0},
+  {tipo:"PEAD RECUP",cod:"PESNOR300",desc:"CAÑO PESADO DE 90MM",peso:1.42,anillo:0},
+  {tipo:"PEAD RECUP",cod:"PESNOR400",desc:"CAÑO PESADO DE 110MM",peso:2.14,anillo:0},
+  {tipo:"PEAD RECUP",cod:"PESNOR600",desc:"CAÑO PESADO DE 160MM",peso:4.98,anillo:0},
+  {tipo:"PEAD RECUP",cod:"PESNOR800",desc:"CAÑO PESADO DE 200MM",peso:7.75,anillo:0},
+  {tipo:"PEAD RECUP",cod:"STANOR150",desc:"CAÑO STANDARD DE 50MM",peso:0.29,anillo:0},
+  {tipo:"PEAD RECUP",cod:"STANOR200",desc:"CAÑO STANDARD DE 63MM",peso:0.45,anillo:0},
+  {tipo:"PEAD RECUP",cod:"STANOR250",desc:"CAÑO STANDARD DE 75MM",peso:0.66,anillo:0},
+  {tipo:"PEAD RECUP",cod:"STANOR300",desc:"CAÑO STANDARD DE 90MM",peso:0.94,anillo:0},
+  {tipo:"PEAD RECUP",cod:"STANOR400",desc:"CAÑO STANDARD DE 110MM",peso:1.4,anillo:0},
+  {tipo:"PEAD RECUP",cod:"STANOR600",desc:"CAÑO STANDARD DE 160MM",peso:3.0,anillo:0},
+  {tipo:"PEAD RECUP",cod:"STANOR800",desc:"CAÑO STANDARD DE 200MM",peso:5.17,anillo:0},
+  // PEAD
+  {tipo:"PEAD",cod:"CORPOS075",desc:"CAÑO CORPOSANA DE 3/4 PEAD PE100",peso:0.169,anillo:0},
+  {tipo:"PEAD",cod:"CORPOS100",desc:"CAÑO CORPOSANA DE 1 PEAD PE100",peso:0.27,anillo:0},
+  {tipo:"PEAD",cod:"CORPOS200",desc:"CAÑO CORPOSANA DE 2 PEAD PE100",peso:1.03,anillo:0},
+  {tipo:"PEAD",cod:"CORPOS400",desc:"CAÑO CORPOSANA DE 4 PEAD PE100",peso:4.0,anillo:0},
+  {tipo:"PEAD",cod:"PAZ15K050",desc:"CAÑO TITAN PESADO DE 1/2 PE100 PN16",peso:0.173,anillo:0},
+  {tipo:"PEAD",cod:"PAZ15K075",desc:"CAÑO TITAN PESADO DE 3/4 PE100 PN16",peso:0.248,anillo:0},
+  {tipo:"PEAD",cod:"PAZ15K100",desc:"CAÑO TITAN PESADO DE 1 PE100 PN16",peso:0.383,anillo:0},
+  {tipo:"PEAD",cod:"PAZ15K125",desc:"CAÑO TITAN PESADO DE 1.1/4 PE100 PN16",peso:0.621,anillo:0},
+  {tipo:"PEAD",cod:"PAZ15K150",desc:"CAÑO TITAN PESADO DE 1.1/2 PE100 PN16",peso:0.794,anillo:0},
+  {tipo:"PEAD",cod:"PAZ15K200",desc:"CAÑO TITAN PESADO DE 2 PE100 PN16",peso:1.244,anillo:0},
+  {tipo:"PEAD",cod:"PAZ15K250",desc:"CAÑO TITAN PESADO DE 2.1/2 PE100 PN16",peso:1.982,anillo:0},
+  {tipo:"PEAD",cod:"PAZ15K300",desc:"CAÑO TITAN PESADO DE 3 PE100 PN16",peso:2.781,anillo:0},
+  {tipo:"PEAD",cod:"PESAZU050",desc:"CAÑO TITAN PESADO DE 1/2",peso:0.16,anillo:0},
+  {tipo:"PEAD",cod:"PESAZU075",desc:"CAÑO TITAN PESADO DE 3/4",peso:0.22,anillo:0},
+  {tipo:"PEAD",cod:"PESAZU100",desc:"CAÑO TITAN PESADO DE 1",peso:0.305,anillo:0},
+  {tipo:"PEAD",cod:"PESAZU125",desc:"CAÑO TITAN PESADO DE 1.1/4",peso:0.422,anillo:0},
+  {tipo:"PEAD",cod:"PESAZU150",desc:"CAÑO TITAN PESADO DE 1.1/2",peso:0.625,anillo:0},
+  {tipo:"PEAD",cod:"PESAZU200",desc:"CAÑO TITAN PESADO DE 2",peso:0.979,anillo:0},
+  {tipo:"PEAD",cod:"PESAZU250",desc:"CAÑO TITAN PESADO DE 2.1/2",peso:1.32,anillo:0},
+  {tipo:"PEAD",cod:"PESAZU300",desc:"CAÑO TITAN PESADO DE 3",peso:1.97,anillo:0},
+  {tipo:"PEAD",cod:"PESAZU400",desc:"CAÑO TITAN PESADO DE 4",peso:2.85,anillo:0},
+  {tipo:"PEAD",cod:"STAAZU050",desc:"CAÑO TITAN STANDARD DE 1/2",peso:0.135,anillo:0},
+  {tipo:"PEAD",cod:"STAAZU075",desc:"CAÑO TITAN STANDARD DE 3/4",peso:0.18,anillo:0},
+  {tipo:"PEAD",cod:"STAAZU100",desc:"CAÑO TITAN STANDARD DE 1",peso:0.23,anillo:0},
+  {tipo:"PEAD",cod:"STAAZU125",desc:"CAÑO TITAN STANDARD DE 1.1/4",peso:0.36,anillo:0},
+  {tipo:"PEAD",cod:"STAAZU150",desc:"CAÑO TITAN STANDARD DE 1.1/2",peso:0.44,anillo:0},
+  {tipo:"PEAD",cod:"STAAZU200",desc:"CAÑO TITAN STANDARD DE 2",peso:0.64,anillo:0},
+  {tipo:"PEAD",cod:"STAAZU250",desc:"CAÑO TITAN STANDARD DE 2.1/2",peso:0.978,anillo:0},
+  {tipo:"PEAD",cod:"STAAZU300",desc:"CAÑO TITAN STANDARD DE 3",peso:1.376,anillo:0},
+  {tipo:"PEAD",cod:"STAAZU400",desc:"CAÑO TITAN STANDARD DE 4",peso:1.91,anillo:0},
+  {tipo:"PEAD",cod:"1100PES050",desc:"CAÑO TITAN PESADO DE 20MM PE100 PN16",peso:0.12,anillo:0},
+  {tipo:"PEAD",cod:"1100PES075",desc:"CAÑO TITAN PESADO DE 25MM PE100 PN16",peso:0.17,anillo:0},
+  {tipo:"PEAD",cod:"1100PES100",desc:"CAÑO TITAN PESADO DE 32MM PE100 PN16",peso:0.3,anillo:0},
+  {tipo:"PEAD",cod:"1100PES125",desc:"CAÑO TITAN PESADO DE 40MM PE100 PN16",peso:0.46,anillo:0},
+  {tipo:"PEAD",cod:"1100PES150",desc:"CAÑO TITAN PESADO DE 50MM PE100 PN16",peso:0.72,anillo:0},
+  {tipo:"PEAD",cod:"1100PES200",desc:"CAÑO TITAN PESADO DE 63MM PE100 PN16",peso:1.13,anillo:0},
+  {tipo:"PEAD",cod:"1100PES250",desc:"CAÑO TITAN PESADO DE 75MM PE100 PN16",peso:1.58,anillo:0},
+  {tipo:"PEAD",cod:"1100PES300",desc:"CAÑO TITAN PESADO DE 90MM PE100 PN16",peso:2.29,anillo:0},
+  {tipo:"PEAD",cod:"1100PES400",desc:"CAÑO TITAN PESADO DE 110MM PE100 PN16",peso:3.38,anillo:0},
+  {tipo:"PEAD",cod:"1100PES600",desc:"CAÑO TITAN PESADO DE 160MM PE100 PN16",peso:6.95,anillo:0},
+  {tipo:"PEAD",cod:"1100PES800",desc:"CAÑO TITAN PESADO DE 200MM PE100 PN16",peso:11.18,anillo:0},
+  {tipo:"PEAD",cod:"1700PES100",desc:"CAÑO TITAN PESADO DE 32MM PE100 PN10",peso:0.2,anillo:0},
+  {tipo:"PEAD",cod:"1700PES125",desc:"CAÑO TITAN PESADO DE 40MM PE100 PN10",peso:0.3,anillo:0},
+  {tipo:"PEAD",cod:"1700PES150",desc:"CAÑO TITAN PESADO DE 50MM PE100 PN10",peso:0.42,anillo:0},
+  {tipo:"PEAD",cod:"1700PES200",desc:"CAÑO TITAN PESADO DE 63MM PE100 PN10",peso:0.67,anillo:0},
+  {tipo:"PEAD",cod:"1700PES250",desc:"CAÑO TITAN PESADO DE 75MM PE100 PN10",peso:1.0,anillo:0},
+  {tipo:"PEAD",cod:"1700PES300",desc:"CAÑO TITAN PESADO DE 90MM PE100 PN10",peso:1.42,anillo:0},
+  {tipo:"PEAD",cod:"1700PES400",desc:"CAÑO TITAN PESADO DE 110MM PE100 PN10",peso:3.214,anillo:0},
+  {tipo:"PEAD",cod:"1700PES600",desc:"CAÑO TITAN PESADO DE 160MM PE100 PN10",peso:4.98,anillo:0},
+  {tipo:"PEAD",cod:"1700PES800",desc:"CAÑO TITAN PESADO DE 200MM PE100 PN10",peso:7.75,anillo:0},
+  {tipo:"PEAD",cod:"2600ST150",desc:"CAÑO TITAN DE 50MM PE100 PN6K",peso:0.29,anillo:0},
+  {tipo:"PEAD",cod:"2600ST200",desc:"CAÑO TITAN DE 63MM PE100 PN6K",peso:0.45,anillo:0},
+  {tipo:"PEAD",cod:"2600ST250",desc:"CAÑO TITAN DE 75MM PE100 PN6K",peso:0.66,anillo:0},
+  {tipo:"PEAD",cod:"2600ST300",desc:"CAÑO TITAN DE 90MM PE100 PN6K",peso:0.94,anillo:0},
+  {tipo:"PEAD",cod:"2600ST400",desc:"CAÑO TITAN DE 110MM PE100 PN6K",peso:1.4,anillo:0},
+  {tipo:"PEAD",cod:"2600ST600",desc:"CAÑO TITAN DE 160MM PE100 PN6K",peso:3.0,anillo:0},
+  {tipo:"PEAD",cod:"2600ST800",desc:"CAÑO TITAN DE 200MM PE100 PN6K",peso:5.17,anillo:0},
+  {tipo:"PEAD",cod:"TRITUBOA01",desc:"TRITIBO AMARILLO PEAD 40MM X 3MM",peso:1.2,anillo:0},
+  // PVC
+  {tipo:"PVC",cod:"ROSCAB050",desc:"CAÑO PVC ROSCABLE DE 1/2",peso:1.502,anillo:0},
+  {tipo:"PVC",cod:"ROSCAB075",desc:"CAÑO PVC ROSCABLE DE 3/4",peso:2.1,anillo:0},
+  {tipo:"PVC",cod:"ROSCAB100",desc:"CAÑO PVC ROSCABLE DE 1",peso:3.015,anillo:0},
+  {tipo:"PVC",cod:"ROSCAB125",desc:"CAÑO PVC ROSCABLE DE 1.1/4",peso:4.276,anillo:0},
+  {tipo:"PVC",cod:"ROSCAB150",desc:"CAÑO PVC ROSCABLE DE 1.1/2",peso:5.502,anillo:0},
+  {tipo:"PVC",cod:"ROSCAB200",desc:"CAÑO PVC ROSCABLE DE 2",peso:7.76,anillo:0},
+  {tipo:"PVC",cod:"LIVIAN040",desc:"CAÑO PVC LIVIANO DE 40 MM",peso:1.339,anillo:0},
+  {tipo:"PVC",cod:"LIVIAN050",desc:"CAÑO PVC LIVIANO DE 50 MM",peso:1.98,anillo:0},
+  {tipo:"PVC",cod:"LIVIAN075",desc:"CAÑO PVC LIVIANO DE 75 MM",peso:3.285,anillo:0},
+  {tipo:"PVC",cod:"LIVIAN100",desc:"CAÑO PVC LIVIANO DE 100 MM",peso:4.534,anillo:0},
+  {tipo:"PVC",cod:"LIVIAN150",desc:"CAÑO PVC LIVIANO DE 150 MM",peso:10.461,anillo:0},
+  {tipo:"PVC",cod:"LIVANT100",desc:"CAÑO PVC 100 X 2.2 MM",peso:6.32,anillo:0},
+  {tipo:"PVC",cod:"LIVIAN200",desc:"CAÑO PVC 200 X 3.6 MM",peso:19.527,anillo:0},
+  {tipo:"PVC",cod:"CLOACA100",desc:"CAÑO PVC CLOACAL DE 100 MM MARRON",peso:4.0,anillo:0},
+  {tipo:"PVC",cod:"CLOBLA100",desc:"CAÑO PVC CLOACAL DE 100 MM BLANCO",peso:4.0,anillo:0},
+  {tipo:"PVC",cod:"CLOACA150",desc:"CAÑO PVC CLOACAL DE 150 MM MARRON",peso:8.386,anillo:0},
+  {tipo:"PVC",cod:"CLOBLA150",desc:"CAÑO PVC CLOACAL DE 150 MM BLANCO",peso:8.386,anillo:0},
+  {tipo:"PVC",cod:"ECOBLA040",desc:"CAÑO DESAGUE ECONOMICO DE 40 MM BLANCO",peso:1.207,anillo:0},
+  {tipo:"PVC",cod:"ECOBLA050",desc:"CAÑO DESAGUE ECONOMICO DE 50 MM BLANCO",peso:1.75,anillo:0},
+  {tipo:"PVC",cod:"ECOBLA100",desc:"CAÑO CLOACAL ECONOMICO DE 100 MM BLANCO",peso:3.15,anillo:0},
+  {tipo:"PVC",cod:"SOL06K032",desc:"CAÑO PVC SOLDABLE DE 32 MM 6 K",peso:1.14,anillo:0},
+  {tipo:"PVC",cod:"SOL06K040",desc:"CAÑO PVC SOLDABLE DE 40 MM 6 K",peso:1.55,anillo:0},
+  {tipo:"PVC",cod:"SOL06K050",desc:"CAÑO PVC SOLDABLE DE 50 MM 6 K",peso:2.35,anillo:0},
+  {tipo:"PVC",cod:"SOL06K060",desc:"CAÑO PVC SOLDABLE DE 60 MM 6 K",peso:3.489,anillo:0},
+  {tipo:"PVC",cod:"SOL06K075",desc:"CAÑO PVC SOLDABLE DE 75 MM 6 K",peso:5.192,anillo:0},
+  {tipo:"PVC",cod:"SOL06K085",desc:"CAÑO PVC SOLDABLE DE 85 MM 6 K",peso:6.826,anillo:0},
+  {tipo:"PVC",cod:"SOL06K110",desc:"CAÑO PVC SOLDABLE DE 110 MM 6K",peso:10.966,anillo:0},
+  {tipo:"PVC",cod:"SOL06K160",desc:"CAÑO PVC SOLDABLE DE 160 MM 6K",peso:23.041,anillo:0},
+  {tipo:"PVC",cod:"SOL06K200",desc:"CAÑO PVC SOLDABLE DE 200 MM 6K",peso:36.004,anillo:0},
+  {tipo:"PVC",cod:"SOL75K020",desc:"CAÑO PVC SOLDABLE DE 20 MM 10 K",peso:0.633,anillo:0},
+  {tipo:"PVC",cod:"SOL75K025",desc:"CAÑO PVC SOLDABLE DE 25 MM 10 K",peso:0.969,anillo:0},
+  {tipo:"PVC",cod:"SOL75K032",desc:"CAÑO PVC SOLDABLE DE 32 MM 10 K",peso:1.594,anillo:0},
+  {tipo:"PVC",cod:"SOL10K040",desc:"CAÑO PVC SOLDABLE DE 40 MM 10 K",peso:2.25,anillo:0},
+  {tipo:"PVC",cod:"SOL10K050",desc:"CAÑO PVC SOLDABLE DE 50 MM 10 K",peso:3.323,anillo:0},
+  {tipo:"PVC",cod:"SOL10K060",desc:"CAÑO PVC SOLDABLE DE 60 MM 10 K",peso:4.985,anillo:0},
+  {tipo:"PVC",cod:"SOL10K075",desc:"CAÑO PVC SOLDABLE DE 75 MM 10 K",peso:7.477,anillo:0},
+  {tipo:"PVC",cod:"SOL10K085",desc:"CAÑO PVC SOLDABLE DE 85 MM 10 K",peso:10.12,anillo:0},
+  {tipo:"PVC",cod:"SOL10K110",desc:"CAÑO PVC SOLDABLE DE 110 MM 10 K",peso:16.145,anillo:0},
+  {tipo:"PVC",cod:"SOL10K160",desc:"CAÑO PVC SOLDABLE DE 160 MM 10 K",peso:34.12,anillo:0},
+  {tipo:"PVC",cod:"SOL10K200",desc:"CAÑO PVC SOLDABLE DE 200 MM 10 K",peso:53.17,anillo:0},
+  {tipo:"PVC",cod:"06KSOL060",desc:"CAÑO PVC PBA PN 6 KG/CM2 DE 60MM",peso:3.489,anillo:3130},
+  {tipo:"PVC",cod:"06KSOL075",desc:"CAÑO PVC PBA PN 6 KG/CM2 DE 75MM",peso:5.192,anillo:2512},
+  {tipo:"PVC",cod:"06KSOL085",desc:"CAÑO PVC PBA PN 6 KG/CM2 DE 85MM",peso:6.826,anillo:4100},
+  {tipo:"PVC",cod:"06KSOL110",desc:"CAÑO PVC PBA PN 6 KG/CM2 DE 110MM",peso:10.966,anillo:5500},
+  {tipo:"PVC",cod:"06KSOL160",desc:"CAÑO PVC PBA PN 6 KG/CM2 DE 160MM",peso:23.041,anillo:11600},
+  {tipo:"PVC",cod:"06KSOL200",desc:"CAÑO PVC PBA PN 6 KG/CM2 DE 200MM",peso:36.004,anillo:13600},
+  {tipo:"PVC",cod:"06KSOL250",desc:"CAÑO PVC PBA PN 6 KG/CM2 DE 250MM",peso:44.0,anillo:19400},
+  {tipo:"PVC",cod:"06KSOL315",desc:"CAÑO PVC PBA PN 6 KG/CM2 DE 315MM",peso:72.0,anillo:29000},
+  {tipo:"PVC",cod:"06KSOL350",desc:"CAÑO PVC PBA PN 6 KG/CM2 DE 350MM",peso:90.0,anillo:40500},
+  {tipo:"PVC",cod:"06KSOL400",desc:"CAÑO PVC PBA PN 6 KG/CM2 DE 400MM",peso:117.0,anillo:55100},
+  {tipo:"PVC",cod:"10KSOL060",desc:"CAÑO PVC PBA PN 10 KG/CM2 DE 60MM",peso:4.805,anillo:3130},
+  {tipo:"PVC",cod:"10KSOL075",desc:"CAÑO PVC PBA PN 10 KG/CM2 DE 75MM",peso:7.2,anillo:2512},
+  {tipo:"PVC",cod:"10KSOL085",desc:"CAÑO PVC PBA PN 10 KG/CM2 DE 85MM",peso:9.675,anillo:4100},
+  {tipo:"PVC",cod:"10KSOL110",desc:"CAÑO PVC PBA PN 10 KG/CM2 DE 110MM",peso:15.8,anillo:5500},
+  {tipo:"PVC",cod:"10KSOL160",desc:"CAÑO PVC PBA PN 10 KG/CM2 DE 160MM",peso:33.873,anillo:11600},
+  {tipo:"PVC",cod:"10KSOL200",desc:"CAÑO PVC PBA PN 10 KG/CM2 DE 200MM",peso:51.625,anillo:13600},
+  {tipo:"PVC",cod:"10KSOL250",desc:"CAÑO PVC PBA PN 10 KG/CM2 DE 250MM",peso:79.3,anillo:19400},
+  {tipo:"PVC",cod:"16KSOL060",desc:"CAÑO PVC PBA PN 16 KG/CM2 DE 60MM",peso:7.2,anillo:3130},
+  {tipo:"PVC",cod:"16KSOL075",desc:"CAÑO PVC PBA PN 16 KG/CM2 DE 75MM",peso:10.62,anillo:2512},
+  {tipo:"PVC",cod:"16KSOL085",desc:"CAÑO PVC PBA PN 16 KG/CM2 DE 85MM",peso:14.4,anillo:4100},
+  {tipo:"PVC",cod:"16KSOL110",desc:"CAÑO PVC PBA PN 16 KG/CM2 DE 110MM",peso:22.8,anillo:5500},
+  {tipo:"PVC",cod:"16KSOL160",desc:"CAÑO PVC PBA PN 16 KG/CM2 DE 160MM",peso:48.0,anillo:11600},
+  {tipo:"PVC",cod:"16KSOL200",desc:"CAÑO PVC PBA PN 16 KG/CM2 DE 200MM",peso:72.6,anillo:13600},
+  {tipo:"PVC",cod:"LIR06K040",desc:"CAÑO PVC PBA PN 6 KG/CM2 DE 40MM",peso:1.4,anillo:0},
+  {tipo:"PVC",cod:"LIR06K050",desc:"CAÑO PVC PBA PN 6 KG/CM2 DE 50MM",peso:2.2,anillo:0},
+  {tipo:"PVC",cod:"LIR06K060",desc:"CAÑO PVC PBA PN 6 KG/CM2 DE 60MM",peso:3.3,anillo:3130},
+  {tipo:"PVC",cod:"LIR06K075",desc:"CAÑO PVC PBA PN 6 KG/CM2 DE 75MM",peso:4.8,anillo:2512},
+  {tipo:"PVC",cod:"LIR06K085",desc:"CAÑO PVC PBA PN 6 KG/CM2 DE 85MM",peso:6.1,anillo:4100},
+  {tipo:"PVC",cod:"LIR06K110",desc:"CAÑO PVC PBA PN 6 KG/CM2 DE 110MM",peso:8.1,anillo:5500},
+  {tipo:"PVC",cod:"LIR06K160",desc:"CAÑO PVC PBA PN 6 KG/CM2 DE 160MM",peso:17.4,anillo:11600},
+  {tipo:"PVC",cod:"LIR06K200",desc:"CAÑO PVC PBA PN 6 KG/CM2 DE 200MM",peso:26.6,anillo:13600},
+  {tipo:"PVC",cod:"LIR06K250",desc:"CAÑO PVC PBA PN 6 KG/CM2 DE 250MM",peso:42.2,anillo:19400},
+  {tipo:"PVC",cod:"LIR06K315",desc:"CAÑO PVC PBA PN 6 KG/CM2 DE 315MM",peso:66.1,anillo:29000},
+  {tipo:"PVC",cod:"LIR06K350",desc:"CAÑO PVC PBA PN 6 KG/CM2 DE 350MM",peso:88.8,anillo:40500},
+  {tipo:"PVC",cod:"LIR06K400",desc:"CAÑO PVC PBA PN 6 KG/CM2 DE 400MM",peso:106.7,anillo:55100},
+  {tipo:"PVC",cod:"110POZ036",desc:"CAÑO PVC POZO DE 110 X 3.6",peso:7.02,anillo:0},
+  {tipo:"PVC",cod:"110POZ045",desc:"CAÑO PVC POZO DE 110 X 4.5",peso:8.958,anillo:0},
+  {tipo:"PVC",cod:"116POZ060",desc:"CAÑO PVC POZO DE 116 X 6",peso:12.338,anillo:0},
+  {tipo:"PVC",cod:"116POZ075",desc:"CAÑO PVC POZO DE 116 X 7.5",peso:16.224,anillo:0},
+  {tipo:"PVC",cod:"128POZ060",desc:"CAÑO PVC POZO DE 128 X 6",peso:13.615,anillo:0},
+  {tipo:"PVC",cod:"128POZ080",desc:"CAÑO PVC POZO DE 128 X 8",peso:18.153,anillo:0},
+  {tipo:"PVC",cod:"128POZ100",desc:"CAÑO PVC POZO DE 128 X 10",peso:22.678,anillo:0},
+  {tipo:"PVC",cod:"POZ174065",desc:"CAÑO PVC POZO DE 174 X 6.5",peso:20.0,anillo:0},
+  {tipo:"PVC",cod:"POZ174095",desc:"CAÑO PVC POZO DE 174 X 9.2",peso:29.836,anillo:0},
+  {tipo:"PVC",cod:"POZ174115",desc:"CAÑO PVC POZO DE 174 X 11.5",peso:37.296,anillo:0},
+  {tipo:"PVC",cod:"POZ200065",desc:"CAÑO PVC POZO DE 200 X 6.5",peso:24.228,anillo:0},
+  {tipo:"PVC",cod:"POZ200096",desc:"CAÑO PVC POZO DE 200 X 9.6",peso:35.756,anillo:0},
+  {tipo:"PVC",cod:"200POZ012",desc:"CAÑO PVC POZO DE 200 X 12",peso:44.52,anillo:0},
+  {tipo:"PVC",cod:"110FIL036",desc:"CAÑO PVC C/FILTRO 110 X 3.6",peso:7.02,anillo:12000},
+  {tipo:"PVC",cod:"110FIL045",desc:"CAÑO PVC C/FILTRO 110 X 4.5",peso:8.958,anillo:12000},
+  {tipo:"PVC",cod:"116FIL060",desc:"CAÑO PVC C/FILTRO 116 X 6",peso:12.338,anillo:12000},
+  {tipo:"PVC",cod:"116FIL075",desc:"CAÑO PVC C/FILTRO 116 X 7.5",peso:16.224,anillo:16000},
+  {tipo:"PVC",cod:"128FIL060",desc:"CAÑO PVC C/FILTRO 128 X 6",peso:13.615,anillo:16000},
+  {tipo:"PVC",cod:"128FIL080",desc:"CAÑO PVC C/FILTRO 128 X 8",peso:18.153,anillo:16000},
+  {tipo:"PVC",cod:"128FIL100",desc:"CAÑO PVC C/FILTRO 128 X 10",peso:22.678,anillo:16000},
+  {tipo:"PVC",cod:"FIL174065",desc:"CAÑO PVC C/FILTRO 174 X 6.5",peso:20.0,anillo:16000},
+  {tipo:"PVC",cod:"FIL174095",desc:"CAÑO PVC C/FILTRO 174 X 9.2",peso:29.836,anillo:20000},
+  {tipo:"PVC",cod:"FIL174115",desc:"CAÑO PVC C/FILTRO 174 X 11.5",peso:37.296,anillo:20000},
+  {tipo:"PVC",cod:"FIL200065",desc:"CAÑO PVC C/FILTRO 200 X 6.5",peso:24.228,anillo:20000},
+  {tipo:"PVC",cod:"FIL200096",desc:"CAÑO PVC C/FILTRO 200 X 9.6",peso:35.756,anillo:20000},
+  {tipo:"PVC",cod:"200FIL012",desc:"CAÑO PVC C/FILTRO 200 X 12",peso:44.52,anillo:20000},
+  {tipo:"PVC",cod:"SER040015",desc:"CAÑO PVC SERIE R 40 MM X 6 MTS",peso:1.55,anillo:0},
+  {tipo:"PVC",cod:"SER050017",desc:"CAÑO PVC SERIE R 50 MM X 6 MTS",peso:2.35,anillo:0},
+  {tipo:"PVC",cod:"SER075025",desc:"CAÑO PVC SERIE R 75 MM X 2.0 MM",peso:4.07,anillo:0},
+  {tipo:"PVC",cod:"SER100025",desc:"CAÑO PVC SERIE R 100 MM X 2.5 MM",peso:6.9,anillo:0},
+  {tipo:"PVC",cod:"SER150032",desc:"CAÑO PVC SERIE R 150 MM X 3.6 MM",peso:15.268,anillo:0},
+  {tipo:"PVC",cod:"SR075018",desc:"CAÑO PVC DESAGUE REFORZADO 75 MM",peso:3.382,anillo:0},
+  {tipo:"PVC",cod:"SR100022",desc:"CAÑO PVC DESAGUE REFORZADO 100 MM",peso:6.05,anillo:0},
+  {tipo:"PVC",cod:"SR150031",desc:"CAÑO PVC DESAGUE REFORZADO 150 MM",peso:13.1,anillo:0},
+  {tipo:"PVC",cod:"ELEPVC020",desc:"CAÑO ELECTRODUCTO DE PVC 20 MM",peso:0.35,anillo:0},
+  {tipo:"PVC",cod:"ELEPVC025",desc:"CAÑO ELECTRODUCTO DE PVC 25 MM",peso:0.545,anillo:0},
+  {tipo:"PVC",cod:"ELEPVC032",desc:"CAÑO ELECTRODUCTO DE PVC 32 MM",peso:0.57,anillo:0},
+  {tipo:"PVC",cod:"ELEPVC040",desc:"CAÑO ELECTRODUCTO DE PVC 40 MM",peso:0.825,anillo:0},
+  {tipo:"PVC",cod:"ELEPVC050",desc:"CAÑO ELECTRODUCTO DE PVC 50 MM",peso:0.925,anillo:0},
+  {tipo:"PVC",cod:"CORPVC038",desc:"CAÑO CORRUGADO PVC 16 MM ANTILLAMA",peso:0.032,anillo:0},
+  {tipo:"PVC",cod:"CORPVC050",desc:"CAÑO CORRUGADO PVC 20 MM ANTILLAMA",peso:0.048,anillo:0},
+  {tipo:"PVC",cod:"CORPVC075",desc:"CAÑO CORRUGADO PVC 25 MM ANTILLAMA",peso:0.07,anillo:0},
+  {tipo:"PVC",cod:"CORPVC100",desc:"CAÑO CORRUGADO PVC 32 MM ANTILLAMA",peso:0.094,anillo:0},
+  {tipo:"PVC",cod:"COL110025",desc:"CAÑO PVC TITAN COLECTOR DE 110 MM",peso:7.775,anillo:5500},
+  {tipo:"PVC",cod:"COL160036",desc:"CAÑO PVC TITAN COLECTOR DE 160 MM",peso:16.286,anillo:11600},
+  {tipo:"PVC",cod:"COL200045",desc:"CAÑO PVC TITAN COLECTOR DE 200 MM",peso:25.155,anillo:13600},
+  {tipo:"PVC",cod:"COL250061",desc:"CAÑO PVC COLECTOR DE 250 MM",peso:43.944,anillo:19400},
+  {tipo:"PVC",cod:"COL315077",desc:"CAÑO PVC COLECTOR DE 300 MM",peso:72.15,anillo:29000},
+  {tipo:"PVC",cod:"COL350087",desc:"CAÑO PVC COLECTOR DE 350 MM",peso:90.4,anillo:40500},
+  {tipo:"PVC",cod:"COL400098",desc:"CAÑO PVC COLECTOR DE 400 MM",peso:117.01,anillo:55100},
+  // POLIPROPILENO
+  {tipo:"POLIPROPILENO",cod:"6MTT2012",desc:"CAÑO PN 12.5 AGUA FRIA 20 MM 6MTS",peso:0.612,anillo:0},
+  {tipo:"POLIPROPILENO",cod:"6MTT2512",desc:"CAÑO PN 12.5 AGUA FRIA 25 MM 6MTS",peso:1.1,anillo:0},
+  {tipo:"POLIPROPILENO",cod:"6MTT3212",desc:"CAÑO PN 12.5 AGUA FRIA 32 MM 6MTS",peso:1.6,anillo:0},
+  {tipo:"POLIPROPILENO",cod:"6MTT4012",desc:"CAÑO PN 12.5 AGUA FRIA 40 MM 6MTS",peso:2.457,anillo:0},
+  {tipo:"POLIPROPILENO",cod:"6MTT5012",desc:"CAÑO PN 12.5 AGUA FRIA 50 MM 6MTS",peso:3.9,anillo:0},
+  {tipo:"POLIPROPILENO",cod:"6MTT6312",desc:"CAÑO PN 12.5 AGUA FRIA 63 MM 6MTS",peso:6.068,anillo:0},
+  {tipo:"POLIPROPILENO",cod:"6MTT7512",desc:"CAÑO PN 12.5 AGUA FRIA 75 MM 6MTS",peso:9.15,anillo:0},
+  {tipo:"POLIPROPILENO",cod:"6MTT9012",desc:"CAÑO PN 12.5 AGUA FRIA 90 MM 6MTS",peso:12.63,anillo:0},
+  {tipo:"POLIPROPILENO",cod:"6MTT11012",desc:"CAÑO PN 12.5 AGUA FRIA 110 MM 6MTS",peso:18.827,anillo:0},
+  {tipo:"POLIPROPILENO",cod:"6MTT2020",desc:"CAÑO PN 20 AGUA FRIA/CALIENTE 20MM 6MTS",peso:0.998,anillo:0},
+  {tipo:"POLIPROPILENO",cod:"6MTT2520",desc:"CAÑO PN 20 AGUA FRIA/CALIENTE 25MM 6MTS",peso:1.5,anillo:0},
+  {tipo:"POLIPROPILENO",cod:"6MTT3220",desc:"CAÑO PN 20 AGUA FRIA/CALIENTE 32MM 6MTS",peso:2.35,anillo:0},
+  {tipo:"POLIPROPILENO",cod:"6MTT4020",desc:"CAÑO PN 20 AGUA FRIA/CALIENTE 40MM 6MTS",peso:3.653,anillo:0},
+  {tipo:"POLIPROPILENO",cod:"6MTT5020",desc:"CAÑO PN 20 AGUA FRIA/CALIENTE 50MM 6MTS",peso:5.729,anillo:0},
+  {tipo:"POLIPROPILENO",cod:"6MTT6320",desc:"CAÑO PN 20 AGUA FRIA/CALIENTE 63MM 6MTS",peso:8.996,anillo:0},
+  {tipo:"POLIPROPILENO",cod:"6MTT7520",desc:"CAÑO PN 20 AGUA FRIA/CALIENTE 75MM 6MTS",peso:12.827,anillo:0},
+  {tipo:"POLIPROPILENO",cod:"6MTT9020",desc:"CAÑO PN 20 AGUA FRIA/CALIENTE 90MM 6MTS",peso:18.947,anillo:0},
+  {tipo:"POLIPROPILENO",cod:"6MTT11020",desc:"CAÑO PN 20 AGUA FRIA/CALIENTE 110MM 6MTS",peso:28.0,anillo:0},
+  {tipo:"POLIPROPILENO",cod:"6MTT1620",desc:"CAÑO PN 16 AGUA FRIA/CALIENTE 20MM 6MTS",peso:0.78,anillo:0},
+  {tipo:"POLIPROPILENO",cod:"6MTT1625",desc:"CAÑO PN 16 AGUA FRIA/CALIENTE 25MM 6MTS",peso:1.18,anillo:0},
+  {tipo:"POLIPROPILENO",cod:"6MTT1632",desc:"CAÑO PN 16 AGUA FRIA/CALIENTE 32MM 6MTS",peso:1.93,anillo:0},
+  {tipo:"POLIPROPILENO",cod:"6MTT1640",desc:"CAÑO PN 16 AGUA FRIA/CALIENTE 40MM 6MTS",peso:3.01,anillo:0},
+  {tipo:"POLIPROPILENO",cod:"6MTT1650",desc:"CAÑO PN 16 AGUA FRIA/CALIENTE 50MM 6MTS",peso:4.74,anillo:0},
+  {tipo:"POLIPROPILENO",cod:"6MTT1663",desc:"CAÑO PN 16 AGUA FRIA/CALIENTE 63MM 6MTS",peso:7.42,anillo:0},
+  {tipo:"POLIPROPILENO",cod:"6MTT1675",desc:"CAÑO PN 16 AGUA FRIA/CALIENTE 75MM 6MTS",peso:10.55,anillo:0},
+  {tipo:"POLIPROPILENO",cod:"6MTT1690",desc:"CAÑO PN 16 AGUA FRIA/CALIENTE 90MM 6MTS",peso:15.16,anillo:0},
+  {tipo:"POLIPROPILENO",cod:"6MTT16110",desc:"CAÑO PN 16 AGUA FRIA/CALIENTE 110MM 6MTS",peso:22.67,anillo:0}
+];
+var selected = null;
+function def(t){return DEF[t]||DEF["PVC"];}
+function fmt(n){return Math.round(n).toLocaleString("es-PY");}
+document.getElementById("search").addEventListener("input",onSearch);
+document.addEventListener("click",function(e){if(!e.target.closest(".search-wrap"))document.getElementById("dd").classList.remove("open");});
+function onSearch(){
+  var q=document.getElementById("search").value.toLowerCase().trim();
+  var dd=document.getElementById("dd");
+  if(!q){dd.classList.remove("open");return;}
+  var m=products.filter(function(p){return p.cod.toLowerCase().indexOf(q)>=0||p.desc.toLowerCase().indexOf(q)>=0;}).slice(0,12);
+  if(!m.length){dd.classList.remove("open");return;}
+  dd.innerHTML=m.map(function(p){return "<div class=\"di\" data-cod=\""+p.cod+"\"><div class=\"name\">"+p.desc+"</div><div class=\"meta\">"+p.cod+" · "+p.tipo+" · "+p.peso+" kg</div></div>";}).join("");
+  dd.classList.add("open");
+  dd.querySelectorAll(".di").forEach(function(el){el.addEventListener("click",function(){selected=products.find(function(p){return p.cod===el.dataset.cod;});document.getElementById("search").value=selected.cod+" - "+selected.desc;dd.classList.remove("open");renderResult();});});
+}
+function renderResult(){
+  var p=selected,d=def(p.tipo);
+  document.getElementById("result").innerHTML=
+    "<div class=\"card\"><div class=\"prod-title\">"+p.desc+"<span class=\"badge\">"+p.tipo+"</span></div><div class=\"prod-sub\">"+p.cod+" · "+p.peso+" kg"+(p.anillo?" · anillo Gs "+fmt(p.anillo):"")+"</div></div>"+
+    "<div class=\"card\"><div class=\"slabel\">Costos Gs/kg</div><div class=\"grid2\"><div class=\"field\"><label>Materia prima</label><input type=\"number\" id=\"mp\" value=\""+d.mp+"\" inputmode=\"numeric\"/></div><div class=\"field\"><label>Carga fabril</label><input type=\"number\" id=\"cf\" value=\""+d.cf+"\" inputmode=\"numeric\"/></div></div><div class=\"pv-wrap\"><label>Precio de venta (Gs)</label><input type=\"number\" id=\"pv\" placeholder=\"0\" inputmode=\"numeric\"/></div></div>"+
+    "<div class=\"card\"><div class=\"slabel\">Resultado</div><div class=\"metrics\"><div class=\"metric\" id=\"mc\"><div class=\"ml\">Costo total</div><div class=\"mv\" id=\"vc\">-</div></div><div class=\"metric\" id=\"mg\"><div class=\"ml\">Margen Gs</div><div class=\"mv\" id=\"vg\">-</div></div><div class=\"metric\" id=\"mp2\"><div class=\"ml\">Margen %</div><div class=\"mv\" id=\"vp\">-</div></div></div></div>";
+  ["mp","cf","pv"].forEach(function(id){document.getElementById(id).addEventListener("input",calc);});
+}
+function calc(){
+  var mp=parseFloat(document.getElementById("mp").value)||0;
+  var cf=parseFloat(document.getElementById("cf").value)||0;
+  var pv=parseFloat(document.getElementById("pv").value)||0;
+  var p=selected;
+  var costo=p.peso*(mp+cf)+(p.anillo||0);
+  var mgs=pv-costo;
+  var mpct=pv>0?(mgs/pv)*100:0;
+  document.getElementById("vc").textContent="Gs "+fmt(costo);
+  document.getElementById("vg").textContent=(mgs>=0?"Gs ":"-Gs ")+fmt(Math.abs(mgs));
+  document.getElementById("vp").textContent=mpct.toFixed(1)+"%";
+  var cls=pv===0?"":mgs>=0?"pos":"neg";
+  ["mc","mg","mp2"].forEach(function(id){document.getElementById(id).className="metric "+cls;});
+}
+</script>
+</body>
+</html>
