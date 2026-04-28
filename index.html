@@ -68,21 +68,26 @@ function isPEAD(t){ return t === "PEAD"; }
 function fmt(n){ return Math.round(n).toLocaleString('es-PY'); }
 function def(t){ return isPEAD(t) ? DEF.PEAD : DEF.PVC; }
 
-async function load(){
-  try {
-    const r = await fetch(API);
-    products = await r.json();
-    document.getElementById('status').textContent = products.length + ' productos cargados';
-    renderApp();
-  } catch(e) {
+function load(){
+  document.getElementById('status').textContent = 'Conectando...';
+  const script = document.createElement('script');
+  script.src = API + '?callback=onData';
+  script.onerror = () => {
     document.getElementById('status').textContent = 'Error de conexión';
     document.getElementById('app').innerHTML = `
       <div class="err">
         No se pudo conectar con la base de datos.<br>
-        Revisá tu conexión a internet e intentá de nuevo.
+        Revisá tu conexión e intentá de nuevo.
         <br><button class="retry" onclick="load()">Reintentar</button>
       </div>`;
-  }
+  };
+  document.head.appendChild(script);
+}
+
+function onData(data){
+  products = data.filter(p => p.cod !== 'Código');
+  document.getElementById('status').textContent = products.length + ' productos cargados';
+  renderApp();
 }
 
 function renderApp(){
