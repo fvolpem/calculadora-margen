@@ -33,6 +33,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .field label{font-size:12px;color:#8e8e93;display:block;margin-bottom:5px}
 .field input{width:100%;padding:10px 12px;font-size:16px;border:1px solid #e5e5ea;border-radius:10px;background:#fff;color:#1d1d1f;outline:none;-webkit-appearance:none}
 .field input:focus{border-color:#007aff}
+.pv-wrap{margin-bottom:4px}
 .pv-wrap label{font-size:14px;font-weight:500;display:block;margin-bottom:6px}
 .pv-wrap input{width:100%;padding:14px 16px;font-size:20px;border:2px solid #e5e5ea;border-radius:12px;background:#fff;color:#1d1d1f;outline:none;-webkit-appearance:none}
 .pv-wrap input:focus{border-color:#007aff}
@@ -42,137 +43,153 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .mv{font-size:15px;font-weight:600;color:#1d1d1f}
 .pos .mv{color:#34c759}
 .neg .mv{color:#ff3b30}
-.loading{text-align:center;padding:40px 20px;color:#8e8e93;font-size:14px}
 .placeholder{text-align:center;padding:40px 20px;color:#c7c7cc;font-size:14px}
-.err{background:#fff3f3;border:1px solid #ffcdd2;border-radius:12px;padding:14px;color:#c62828;font-size:13px;line-height:1.5}
-.retry{display:inline-block;margin-top:10px;padding:8px 16px;background:#007aff;color:#fff;border-radius:8px;font-size:13px;cursor:pointer;border:none}
 </style>
 </head>
 <body>
 
 <div class="header">
   <h1>Calculadora de margen</h1>
-  <p id="status">Conectando con base de datos...</p>
+  <p>51 productos cargados</p>
 </div>
 
 <div class="container">
-  <div id="app"><div class="loading">Cargando productos...</div></div>
+  <div class="search-wrap">
+    <input type="text" id="search" placeholder="Buscar por código o nombre..." autocomplete="off"/>
+    <div class="dropdown" id="dd"></div>
+  </div>
+  <div id="result"><div class="placeholder">Buscá un producto para calcular el margen</div></div>
 </div>
 
 <script>
-const API = "https://script.google.com/macros/s/AKfycbyAp10OGHP_Rwla5eLc55L2mkbpz7iEp1ndj-sGhRQIL41Cvsi1PKhXjo5_FgYxBSIw/exec";
-const DEF = { PVC:{mp:8310,cf:1300}, PEAD:{mp:12800,cf:1500} };
-let products = [], selected = null;
+var DEF = { PVC:{mp:8310,cf:1300}, PEAD:{mp:12800,cf:1500} };
+var products = [
+  {tipo:"PVC COLECTOR",cod:"COL110025",desc:"CAÑO PVC TITAN COLECTOR DE 110 MM",peso:7.775,anillo:5500},
+  {tipo:"PVC COLECTOR",cod:"COL160036",desc:"CAÑO PVC TITAN COLECTOR DE 160 MM",peso:16.286,anillo:11600},
+  {tipo:"PVC COLECTOR",cod:"COL200045",desc:"CAÑO PVC TITAN COLECTOR DE 200 MM",peso:25.155,anillo:13600},
+  {tipo:"PVC COLECTOR",cod:"COL250061",desc:"CAÑO PVC COLECTOR DE 250 MM",peso:43.944,anillo:19400},
+  {tipo:"PVC COLECTOR",cod:"COL315077",desc:"CAÑO PVC COLECTOR DE 300 MM",peso:72.15,anillo:29000},
+  {tipo:"PVC COLECTOR",cod:"COL350087",desc:"CAÑO PVC COLECTOR DE 350 MM",peso:90.4,anillo:40500},
+  {tipo:"PVC COLECTOR",cod:"COL400098",desc:"CAÑO PVC COLECTOR DE 400 MM",peso:117.01,anillo:55100},
+  {tipo:"PVC PBA PN6",cod:"06KSOL060",desc:"CAÑO PVC PBA PN 6 KG/CM2 DE 60MM",peso:3.489,anillo:3130},
+  {tipo:"PVC PBA PN6",cod:"06KSOL075",desc:"CAÑO PVC PBA PN 6 KG/CM2 DE 75MM",peso:5.192,anillo:2512},
+  {tipo:"PVC PBA PN6",cod:"06KSOL085",desc:"CAÑO PVC PBA PN 6 KG/CM2 DE 85MM",peso:6.826,anillo:4100},
+  {tipo:"PVC PBA PN6",cod:"06KSOL110",desc:"CAÑO PVC PBA PN 6 KG/CM2 DE 110MM",peso:10.966,anillo:5500},
+  {tipo:"PVC PBA PN6",cod:"06KSOL160",desc:"CAÑO PVC PBA PN 6 KG/CM2 DE 160MM",peso:23.041,anillo:11600},
+  {tipo:"PVC PBA PN6",cod:"06KSOL200",desc:"CAÑO PVC PBA PN 6 KG/CM2 DE 200MM",peso:36.004,anillo:13600},
+  {tipo:"PVC PBA PN6",cod:"06KSOL250",desc:"CAÑO PVC PBA PN 6 KG/CM2 DE 250MM",peso:44,anillo:19400},
+  {tipo:"PVC PBA PN6",cod:"06KSOL315",desc:"CAÑO PVC PBA PN 6 KG/CM2 DE 315MM",peso:72,anillo:29000},
+  {tipo:"PVC PBA PN6",cod:"06KSOL350",desc:"CAÑO PVC PBA PN 6 KG/CM2 DE 350MM",peso:90,anillo:40500},
+  {tipo:"PVC PBA PN6",cod:"06KSOL400",desc:"CAÑO PVC PBA PN 6 KG/CM2 DE 400MM",peso:117,anillo:55100},
+  {tipo:"PVC PBA PN10",cod:"10KSOL060",desc:"CAÑO PVC PBA PN 10 KG/CM2 DE 60MM",peso:4.805,anillo:3130},
+  {tipo:"PVC PBA PN10",cod:"10KSOL075",desc:"CAÑO PVC PBA PN 10 KG/CM2 DE 75MM",peso:7.2,anillo:2512},
+  {tipo:"PVC PBA PN10",cod:"10KSOL085",desc:"CAÑO PVC PBA PN 10 KG/CM2 DE 85MM",peso:9.675,anillo:4100},
+  {tipo:"PVC PBA PN10",cod:"10KSOL110",desc:"CAÑO PVC PBA PN 10 KG/CM2 DE 110MM",peso:15.8,anillo:5500},
+  {tipo:"PVC PBA PN10",cod:"10KSOL160",desc:"CAÑO PVC PBA PN 10 KG/CM2 DE 160MM",peso:33.873,anillo:11600},
+  {tipo:"PVC PBA PN10",cod:"10KSOL200",desc:"CAÑO PVC PBA PN 10 KG/CM2 DE 200MM",peso:51.625,anillo:13600},
+  {tipo:"PVC PBA PN10",cod:"10KSOL250",desc:"CAÑO PVC PBA PN 10 KG/CM2 DE 250MM",peso:79.3,anillo:19400},
+  {tipo:"PVC SOL 6K",cod:"SOL06K040",desc:"CAÑO PVC SOLDABLE DE 40 MM 6 K.",peso:1.55,anillo:0},
+  {tipo:"PVC SOL 6K",cod:"SOL06K050",desc:"CAÑO PVC SOLDABLE DE 50 MM 6 K.",peso:2.35,anillo:0},
+  {tipo:"PVC SOL 6K",cod:"SOL06K060",desc:"CAÑO PVC SOLDABLE DE 60 MM 6 K.",peso:3.489,anillo:0},
+  {tipo:"PVC SOL 6K",cod:"SOL06K075",desc:"CAÑO PVC SOLDABLE DE 75 MM 6 K.",peso:5.192,anillo:0},
+  {tipo:"PVC SOL 6K",cod:"SOL06K085",desc:"CAÑO PVC SOLDABLE DE 85 MM 6 K.",peso:6.826,anillo:0},
+  {tipo:"PVC SOL 6K",cod:"SOL06K110",desc:"CAÑO PVC SOLDABLE DE 110 MM 6K.",peso:10.966,anillo:0},
+  {tipo:"PVC SOL 6K",cod:"SOL06K160",desc:"CAÑO PVC SOLDABLE DE 160 MM 6K.",peso:23.041,anillo:0},
+  {tipo:"PVC SOL 6K",cod:"SOL06K200",desc:"CAÑO PVC SOLDABLE DE 200 MM 6K.",peso:36.004,anillo:0},
+  {tipo:"PVC SOL 10K",cod:"SOL75K020",desc:"CAÑO PVC SOLDABLE DE 20 MM 10 K.",peso:0.633,anillo:0},
+  {tipo:"PVC SOL 10K",cod:"SOL75K025",desc:"CAÑO PVC SOLDABLE DE 25 MM 10 K.",peso:0.969,anillo:0},
+  {tipo:"PVC SOL 10K",cod:"SOL75K032",desc:"CAÑO PVC SOLDABLE DE 32 MM 10 K.",peso:1.594,anillo:0},
+  {tipo:"PVC SOL 10K",cod:"SOL10K040",desc:"CAÑO PVC SOLDABLE DE 40 MM 10 K.",peso:2.25,anillo:0},
+  {tipo:"PVC SOL 10K",cod:"SOL10K050",desc:"CAÑO PVC SOLDABLE DE 50 MM 10 K.",peso:3.323,anillo:0},
+  {tipo:"PVC SOL 10K",cod:"SOL10K060",desc:"CAÑO PVC SOLDABLE DE 60 MM 10 K.",peso:4.985,anillo:0},
+  {tipo:"PVC SOL 10K",cod:"SOL10K075",desc:"CAÑO PVC SOLDABLE DE 75 MM 10 K.",peso:7.477,anillo:0},
+  {tipo:"PVC SOL 10K",cod:"SOL10K085",desc:"CAÑO PVC SOLDABLE DE 85 MM 10 K.",peso:10.12,anillo:0},
+  {tipo:"PVC SOL 10K",cod:"SOL10K110",desc:"CAÑO PVC SOLDABLE DE 110 MM 10 K.",peso:16.145,anillo:0},
+  {tipo:"PVC SOL 10K",cod:"SOL10K200",desc:"CAÑO PVC SOLDABLE DE 200 MM 10 K.",peso:53.17,anillo:0},
+  {tipo:"PEAD",cod:"PESNOR400",desc:"CAÑO PESADO DE 110MM",peso:2.14,anillo:0},
+  {tipo:"PEAD",cod:"PESNOR600",desc:"CAÑO PESADO DE 160MM",peso:4.98,anillo:0},
+  {tipo:"PEAD",cod:"PESNOR800",desc:"CAÑO PESADO DE 200MM",peso:7.75,anillo:0},
+  {tipo:"PEAD",cod:"STANOR400",desc:"CAÑO STANDARD DE 110MM",peso:1.4,anillo:0},
+  {tipo:"PEAD",cod:"STANOR600",desc:"CAÑO STANDARD DE 160MM",peso:3,anillo:0},
+  {tipo:"PEAD",cod:"STANOR800",desc:"CAÑO STANDARD DE 200MM",peso:5.17,anillo:0},
+  {tipo:"PEAD",cod:"CORPOS075",desc:"CAÑO CORPOSANA DE 3/4 PEAD PE100",peso:0.169,anillo:0},
+  {tipo:"PEAD",cod:"CORPOS100",desc:"CAÑO CORPOSANA DE 1 PEAD PE100",peso:0.27,anillo:0},
+  {tipo:"PEAD",cod:"CORPOS200",desc:"CAÑO CORPOSANA DE 2 PEAD PE100",peso:1.03,anillo:0},
+  {tipo:"PEAD",cod:"CORPOS400",desc:"CAÑO CORPOSANA DE 4 PEAD PE100",peso:4,anillo:0}
+];
 
+var selected = null;
 function isPEAD(t){ return t === "PEAD"; }
-function fmt(n){ return Math.round(n).toLocaleString('es-PY'); }
+function fmt(n){ return Math.round(n).toLocaleString("es-PY"); }
 function def(t){ return isPEAD(t) ? DEF.PEAD : DEF.PVC; }
 
-function load(){
-  document.getElementById('status').textContent = 'Conectando...';
-  const script = document.createElement('script');
-  script.src = API + '?callback=onData';
-  script.onerror = () => {
-    document.getElementById('status').textContent = 'Error de conexión';
-    document.getElementById('app').innerHTML = `
-      <div class="err">
-        No se pudo conectar con la base de datos.<br>
-        Revisá tu conexión e intentá de nuevo.
-        <br><button class="retry" onclick="load()">Reintentar</button>
-      </div>`;
-  };
-  document.head.appendChild(script);
-}
+document.getElementById("search").addEventListener("input", onSearch);
+document.addEventListener("click", function(e){
+  if (!e.target.closest(".search-wrap")) document.getElementById("dd").classList.remove("open");
+});
 
-function onData(data){
-  products = data.filter(p => p.cod !== 'Código');
-  document.getElementById('status').textContent = products.length + ' productos cargados';
-  renderApp();
-}
-
-function renderApp(){
-  document.getElementById('app').innerHTML = `
-    <div class="search-wrap">
-      <input type="text" id="search" placeholder="Buscar por código o nombre..." autocomplete="off"/>
-      <div class="dropdown" id="dd"></div>
-    </div>
-    <div id="result"><div class="placeholder">Buscá un producto para calcular el margen</div></div>
-  `;
-  document.getElementById('search').addEventListener('input', onSearch);
-  document.addEventListener('click', e => {
-    if (!e.target.closest('.search-wrap')) document.getElementById('dd').classList.remove('open');
+function onSearch(){
+  var q = document.getElementById("search").value.toLowerCase().trim();
+  var dd = document.getElementById("dd");
+  if (!q){ dd.classList.remove("open"); return; }
+  var m = products.filter(function(p){
+    return p.cod.toLowerCase().indexOf(q) >= 0 || p.desc.toLowerCase().indexOf(q) >= 0;
+  }).slice(0,12);
+  if (!m.length){ dd.classList.remove("open"); return; }
+  dd.innerHTML = m.map(function(p){
+    return "<div class='di' data-cod='" + p.cod + "'><div class='name'>" + p.desc + "</div><div class='meta'>" + p.cod + " · " + p.tipo + " · " + p.peso + " kg</div></div>";
+  }).join("");
+  dd.classList.add("open");
+  dd.querySelectorAll(".di").forEach(function(el){
+    el.addEventListener("click", function(){
+      selected = products.find(function(p){ return p.cod === el.dataset.cod; });
+      document.getElementById("search").value = selected.cod + " — " + selected.desc;
+      dd.classList.remove("open");
+      renderResult();
+    });
   });
 }
 
-function onSearch(){
-  const q = document.getElementById('search').value.toLowerCase().trim();
-  const dd = document.getElementById('dd');
-  if (!q){ dd.classList.remove('open'); return; }
-  const m = products.filter(p =>
-    p.cod.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q)
-  ).slice(0, 12);
-  if (!m.length){ dd.classList.remove('open'); return; }
-  dd.innerHTML = m.map(p =>
-    `<div class="di" data-cod="${p.cod}">
-      <div class="name">${p.desc}</div>
-      <div class="meta">${p.cod} · ${p.tipo} · ${p.peso} kg</div>
-    </div>`
-  ).join('');
-  dd.classList.add('open');
-  dd.querySelectorAll('.di').forEach(el => el.addEventListener('click', () => {
-    selected = products.find(p => p.cod === el.dataset.cod);
-    document.getElementById('search').value = selected.cod + ' — ' + selected.desc;
-    dd.classList.remove('open');
-    renderResult();
-  }));
-}
-
 function renderResult(){
-  const p = selected, d = def(p.tipo);
-  document.getElementById('result').innerHTML = `
-    <div class="card">
-      <div class="prod-title">${p.desc}<span class="badge">${p.tipo}</span></div>
-      <div class="prod-sub">${p.cod} · ${p.peso} kg${p.anillo ? ' · anillo Gs ' + fmt(p.anillo) : ''}</div>
-    </div>
-    <div class="card">
-      <div class="slabel">Costos Gs/kg</div>
-      <div class="grid2">
-        <div class="field"><label>Materia prima</label><input type="number" id="mp" value="${d.mp}" inputmode="numeric"/></div>
-        <div class="field"><label>Carga fabril</label><input type="number" id="cf" value="${d.cf}" inputmode="numeric"/></div>
-      </div>
-      <div class="pv-wrap">
-        <label>Precio de venta (Gs)</label>
-        <input type="number" id="pv" placeholder="0" inputmode="numeric"/>
-      </div>
-    </div>
-    <div class="card">
-      <div class="slabel">Resultado</div>
-      <div class="metrics">
-        <div class="metric" id="mc"><div class="ml">Costo total</div><div class="mv" id="vc">—</div></div>
-        <div class="metric" id="mg"><div class="ml">Margen Gs</div><div class="mv" id="vg">—</div></div>
-        <div class="metric" id="mp2"><div class="ml">Margen %</div><div class="mv" id="vp">—</div></div>
-      </div>
-    </div>
-  `;
-  ['mp','cf','pv'].forEach(id => document.getElementById(id).addEventListener('input', calc));
+  var p = selected, d = def(p.tipo);
+  document.getElementById("result").innerHTML =
+    "<div class='card'>" +
+      "<div class='prod-title'>" + p.desc + "<span class='badge'>" + p.tipo + "</span></div>" +
+      "<div class='prod-sub'>" + p.cod + " · " + p.peso + " kg" + (p.anillo ? " · anillo Gs " + fmt(p.anillo) : "") + "</div>" +
+    "</div>" +
+    "<div class='card'>" +
+      "<div class='slabel'>Costos Gs/kg</div>" +
+      "<div class='grid2'>" +
+        "<div class='field'><label>Materia prima</label><input type='number' id='mp' value='" + d.mp + "' inputmode='numeric'/></div>" +
+        "<div class='field'><label>Carga fabril</label><input type='number' id='cf' value='" + d.cf + "' inputmode='numeric'/></div>" +
+      "</div>" +
+      "<div class='pv-wrap'><label>Precio de venta (Gs)</label><input type='number' id='pv' placeholder='0' inputmode='numeric'/></div>" +
+    "</div>" +
+    "<div class='card'>" +
+      "<div class='slabel'>Resultado</div>" +
+      "<div class='metrics'>" +
+        "<div class='metric' id='mc'><div class='ml'>Costo total</div><div class='mv' id='vc'>—</div></div>" +
+        "<div class='metric' id='mg'><div class='ml'>Margen Gs</div><div class='mv' id='vg'>—</div></div>" +
+        "<div class='metric' id='mp2'><div class='ml'>Margen %</div><div class='mv' id='vp'>—</div></div>" +
+      "</div>" +
+    "</div>";
+  ["mp","cf","pv"].forEach(function(id){ document.getElementById(id).addEventListener("input", calc); });
 }
 
 function calc(){
-  const mp = parseFloat(document.getElementById('mp').value) || 0;
-  const cf = parseFloat(document.getElementById('cf').value) || 0;
-  const pv = parseFloat(document.getElementById('pv').value) || 0;
-  const p = selected;
-  const costo = p.peso * (mp + cf) + (p.anillo || 0);
-  const mgs = pv - costo;
-  const mpct = pv > 0 ? (mgs / pv) * 100 : 0;
-  document.getElementById('vc').textContent = 'Gs ' + fmt(costo);
-  document.getElementById('vg').textContent = (mgs >= 0 ? 'Gs ' : '-Gs ') + fmt(Math.abs(mgs));
-  document.getElementById('vp').textContent = mpct.toFixed(1) + '%';
-  const cls = pv === 0 ? '' : mgs >= 0 ? 'pos' : 'neg';
-  ['mc','mg','mp2'].forEach(id => { document.getElementById(id).className = 'metric ' + cls; });
+  var mp = parseFloat(document.getElementById("mp").value) || 0;
+  var cf = parseFloat(document.getElementById("cf").value) || 0;
+  var pv = parseFloat(document.getElementById("pv").value) || 0;
+  var p = selected;
+  var costo = p.peso * (mp + cf) + (p.anillo || 0);
+  var mgs = pv - costo;
+  var mpct = pv > 0 ? (mgs / pv) * 100 : 0;
+  document.getElementById("vc").textContent = "Gs " + fmt(costo);
+  document.getElementById("vg").textContent = (mgs >= 0 ? "Gs " : "-Gs ") + fmt(Math.abs(mgs));
+  document.getElementById("vp").textContent = mpct.toFixed(1) + "%";
+  var cls = pv === 0 ? "" : mgs >= 0 ? "pos" : "neg";
+  ["mc","mg","mp2"].forEach(function(id){ document.getElementById(id).className = "metric " + cls; });
 }
-
-load();
 </script>
 </body>
 </html>
